@@ -1,0 +1,7 @@
+node_modules/
+*.tgz
+SHA256SUMS.txt
+.env
+.env.*
+*.log
+agent.MD

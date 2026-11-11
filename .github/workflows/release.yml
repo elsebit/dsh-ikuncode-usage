@@ -1,0 +1,31 @@
+name: Release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm test
+      - name: Check version and syntax
+        run: |
+          node -e 'if (process.env.GITHUB_REF_NAME !== "v" + JSON.parse(require("fs").readFileSync("package.json")).version) process.exit(1)'
+          node --check lib/index.js
+          node --check lib/client.js
+      - name: Pack
+        run: |
+          npm pack --ignore-scripts --pack-destination /tmp
+          cp /tmp/elsebit-dsh-ikuncode-usage-*.tgz dsh-ikuncode-usage.tgz
+          sha256sum dsh-ikuncode-usage.tgz > SHA256SUMS.txt
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dsh-ikuncode-usage.tgz SHA256SUMS.txt --verify-tag --title "$GITHUB_REF_NAME" --notes 'Standalone IKunCode account balance card. Includes a prebuilt package and SHA256 checksum. Built and tested by GitHub Actions.'
